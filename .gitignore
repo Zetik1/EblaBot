@@ -1,0 +1,35 @@
+# Секреты (шаблон .env.example при этом коммитится)
+.env
+.env.*
+!.env.example
+
+# SQLite и служебные файлы
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Виртуальные окружения
+.venv/
+venv/
+env/
+
+# Логи
+*.log
+logs/
+
+# IDE и ОС
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
