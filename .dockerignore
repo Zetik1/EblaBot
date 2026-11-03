@@ -1,0 +1,10 @@
+*
+!requirements.txt
+!config.py
+!main.py
+!db/**
+!handlers/**
+!middlewares/**
+!keyboards/**
+!services/**
+**/__pycache__

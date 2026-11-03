@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.aiohttp import AiohttpSession
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
@@ -29,7 +30,10 @@ async def main() -> None:
         dispatcher.update.outer_middleware(DatabaseMiddleware(session_factory))
         dispatcher.include_router(create_router())
 
-        async with Bot(token=settings.bot_token.get_secret_value()) as bot:
+        session = AiohttpSession(proxy=settings.telegram_proxy_url)
+        async with Bot(
+            token=settings.bot_token.get_secret_value(), session=session
+        ) as bot:
             await dispatcher.start_polling(
                 bot,
                 allowed_updates=[

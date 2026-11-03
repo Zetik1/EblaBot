@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         hide_input_in_errors=True,
     )
 
+    telegram_proxy_url: str | None = None
     bot_token: SecretStr
     owner_id: int = Field(gt=0)
     group_id: int = Field(lt=0)

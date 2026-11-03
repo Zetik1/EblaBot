@@ -1,0 +1,38 @@
+name: eblabot
+services:
+  proxy-config:
+    build: ./docker
+    environment:
+      PROXY_SUBSCRIPTION_URL: ${PROXY_SUBSCRIPTION_URL:?Set PROXY_SUBSCRIPTION_URL in .env}
+    volumes:
+      - proxy-config:/config
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; raise SystemExit(not Path('/config/ready').exists())"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  proxy:
+    image: metacubex/mihomo:v1.19.33
+    entrypoint: ["/bin/sh", "-c", "until [ -f /root/.config/mihomo/ready ]; do sleep 2; done; exec /mihomo"]
+    depends_on:
+      proxy-config:
+        condition: service_started
+    volumes:
+      - proxy-config:/root/.config/mihomo
+    restart: unless-stopped
+  bot:
+    build: .
+    env_file: .env
+    environment:
+      TELEGRAM_PROXY_URL: socks5://proxy:7890
+      DATABASE_PATH: /app/data/bot.sqlite3
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      proxy:
+        condition: service_started
+    restart: unless-stopped
+    stop_grace_period: 20s
+volumes:
+  proxy-config:
