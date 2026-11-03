@@ -10,6 +10,7 @@ from config import Settings
 from db.session import create_engine, create_tables
 from handlers import create_router
 from middlewares.database import DatabaseMiddleware
+from services.lifecycle import LifecycleNotifications
 
 
 async def main() -> None:
@@ -31,6 +32,11 @@ async def main() -> None:
         dispatcher.include_router(create_router())
 
         session = AiohttpSession(proxy=settings.telegram_proxy_url)
+        notifications = LifecycleNotifications(
+            chat_id=settings.status_chat_id, instance_name=settings.instance_name
+        )
+        session.middleware(notifications)
+        dispatcher.shutdown.register(notifications.stopped)
         async with Bot(
             token=settings.bot_token.get_secret_value(), session=session
         ) as bot:
