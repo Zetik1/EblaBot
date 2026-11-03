@@ -33,3 +33,6 @@ logs/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# notes
+notes.md
