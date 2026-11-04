@@ -100,11 +100,18 @@ Copy-Item .env.example .env
 База SQLite создаётся в `data/bot.sqlite3`. Пока моделей нет, она пустая.
 Создание таблиц на старте не изменяет структуру уже существующих таблиц: при
 изменении модели отдельно согласовать перенос данных. Не удалять чужую БД.
-Проверки без токена и подключения к Telegram (для проверок загрузчика подписки
-сначала установить `pip install -r docker/requirements.txt` в то же окружение):
+Проверки без токена и подключения к Telegram:
 
 ```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+Покрытие строк и ветвлений:
+
+```powershell
+.\.venv\Scripts\python.exe -m coverage run -m unittest discover -s tests
+.\.venv\Scripts\python.exe -m coverage report
 ```
 
 ## Возможности
