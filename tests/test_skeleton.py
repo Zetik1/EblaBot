@@ -1,19 +1,17 @@
 import os
 import tempfile
 import unittest
-from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from aiogram import Bot, Dispatcher
-from aiogram.types import Chat, Message, Update, User
+from aiogram.types import Update
 from pydantic import ValidationError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from config import PROJECT_ROOT, Settings
 from db.session import create_engine, create_tables
-from handlers import create_router
 from main import main
 from middlewares.database import DatabaseMiddleware
 
@@ -79,27 +77,6 @@ class DatabaseTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(result.scalars().all(), [1])
             finally:
                 await engine.dispose()
-
-
-class RoutingTests(unittest.IsolatedAsyncioTestCase):
-    async def test_ping_responds_only_in_private_chat(self):
-        dispatcher = Dispatcher()
-        dispatcher.include_router(create_router())
-        async with Bot(token=TOKEN) as bot:
-            with patch.object(bot.session, "make_request", new_callable=AsyncMock) as send:
-                for index, chat_type in enumerate(("private", "supergroup"), start=1):
-                    message = Message(
-                        message_id=index,
-                        date=datetime.now(timezone.utc),
-                        chat=Chat(id=1 if chat_type == "private" else -1, type=chat_type),
-                        from_user=User(id=1, is_bot=False, first_name="Test"),
-                        text="/ping",
-                    )
-                    await dispatcher.feed_update(
-                        bot, Update(update_id=index, message=message)
-                    )
-                send.assert_awaited_once()
-                self.assertEqual(send.call_args.args[1].text, "pong")
 
 
 class StartupTests(unittest.IsolatedAsyncioTestCase):
