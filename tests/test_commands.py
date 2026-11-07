@@ -8,9 +8,11 @@ from unittest.mock import AsyncMock, patch
 from aiogram import Bot, Dispatcher
 from aiogram.methods import SendMessage
 from aiogram.types import Chat, Message, Update, User
-from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from config import Settings
+from db.models import Person
 from db.session import create_engine, create_tables
 from handlers import create_router
 from middlewares.database import DatabaseMiddleware
@@ -77,6 +79,11 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(method.text, text)
         return method
 
+    async def assert_no_people_saved(self):
+        async with AsyncSession(self.engine) as session:
+            result = await session.execute(select(Person.telegram_id))
+            self.assertEqual(result.all(), [])
+
     async def test_start_greets_user_and_mentions_ping_in_private_chat(self):
         for name in ("Влад", "Гриша"):
             with self.subTest(name=name):
@@ -88,6 +95,7 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
     async def test_ping_in_private_chat(self):
         await self.send_message("/ping")
         self.assert_reply(chat_id=42, text="pong")
+        await self.assert_no_people_saved()
 
     async def test_ping_in_configured_group_and_supergroup(self):
         for chat_type in ("group", "supergroup"):
