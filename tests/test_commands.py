@@ -1,14 +1,19 @@
 import os
+import tempfile
 import unittest
 from datetime import datetime, timezone
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 from aiogram import Bot, Dispatcher
 from aiogram.methods import SendMessage
 from aiogram.types import Chat, Message, Update, User
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from config import Settings
+from db.session import create_engine, create_tables
 from handlers import create_router
+from middlewares.database import DatabaseMiddleware
 
 
 class CommandTests(unittest.IsolatedAsyncioTestCase):
@@ -20,7 +25,15 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
                 owner_id=1,
                 group_id=-100123,
             )
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.engine = create_engine(Path(directory.name) / "commands.sqlite3")
+        self.addAsyncCleanup(self.engine.dispose)
+        await create_tables(self.engine)
         self.dispatcher = Dispatcher(settings=settings)
+        self.dispatcher.update.outer_middleware(
+            DatabaseMiddleware(async_sessionmaker(self.engine, expire_on_commit=False))
+        )
         self.dispatcher.include_router(create_router())
         self.bot = Bot(token=settings.bot_token.get_secret_value())
         self.bot._me = User(
