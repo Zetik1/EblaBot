@@ -25,3 +25,6 @@ def create_engine(database_path: Path) -> AsyncEngine:
 async def create_tables(engine: AsyncEngine) -> None:
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+        # #13. Проверь, что create_all делает с уже существующей таблицей.
+        # Как понять, что старый файл БД пора обновить? Что произойдёт при
+        # следующем запуске, если нужная колонка уже есть?
