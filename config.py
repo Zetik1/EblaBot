@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     bot_token: SecretStr
     owner_id: int = Field(gt=0)
     group_id: int = Field(lt=0)
+    # #12. Здесь добавь настройку темы для приветствия. Как обозначить,
+    # что тема не задана, и где показать эту настройку другим разработчикам?
     database_path: Path = Path("data/bot.sqlite3")
     status_chat_id: int | None = None
     instance_name: str = Field(default="Локальная копия", min_length=1, max_length=80)
