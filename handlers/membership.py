@@ -1,3 +1,20 @@
+import logging
+
+from aiogram import Router
+from aiogram.enums import ChatType
+from aiogram.filters import Command, ChatMemberUpdatedFilter, IS_MEMBER, IS_NOT_MEMBER
+from aiogram.types import ChatMemberUpdated
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from services.people import save_person
+
+logger = logging.getLogger(__name__)
+
+
+async def on_user_join(event: ChatMemberUpdated) -> None:
+    pass
+
 # Задача #11. Сначала добейся записи одного участника в тестовой группе.
 #
 # 1. Посмотри, как устроены роутеры в handlers/start.py и handlers/health.py.
