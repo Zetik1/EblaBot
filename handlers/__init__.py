@@ -10,4 +10,5 @@ def create_router() -> Router:
     
     router.include_router(start.create_router())
 
+    # #11: подключи роутер входа в группу здесь, когда он будет готов.
     return router
