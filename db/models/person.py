@@ -1,3 +1,4 @@
+from sqlalchemy import CheckConstraint, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from db.base import Base
@@ -10,5 +11,8 @@ class Person(Base):
     first_name: Mapped[str]
     last_name: Mapped[str | None]
     username: Mapped[str | None]
-    # #13. Здесь добавь роль человека. Как описать три допустимых значения
-    # и задать роль обычного пользователя для новых профилей?
+    role: Mapped[str] = mapped_column(
+        Text,
+        CheckConstraint("role IN ('user', 'moderator', 'admin')", name="ck_people_role"),
+        server_default="user",
+    )
