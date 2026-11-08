@@ -1,6 +1,7 @@
 from aiogram import Router
 
 from handlers import health
+from handlers import membership
 from handlers import start
 
 
@@ -10,5 +11,5 @@ def create_router() -> Router:
     
     router.include_router(start.create_router())
 
-    # #11: подключи роутер входа в группу здесь, когда он будет готов.
+    router.include_router(membership.create_router())
     return router
