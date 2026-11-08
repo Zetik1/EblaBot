@@ -12,6 +12,7 @@ from aiogram.types import (
     ChatMemberBanned,
     ChatMemberLeft,
     ChatMemberMember,
+    ChatMemberRestricted,
     ChatMemberUpdated,
     Update,
     User,
@@ -37,6 +38,16 @@ def administrator(user):
         if field.is_required() and name != "user"
     }
     return ChatMemberAdministrator(user=user, **flags)
+
+
+def restricted(user, *, is_member):
+    # is_member=True: человек с ограничениями всё ещё в группе, False: его в группе нет.
+    flags = {
+        name: False
+        for name, field in ChatMemberRestricted.model_fields.items()
+        if field.is_required() and name not in ("user", "is_member", "until_date")
+    }
+    return ChatMemberRestricted(user=user, is_member=is_member, until_date=0, **flags)
 
 
 class MemberJoinTests(unittest.IsolatedAsyncioTestCase):
@@ -82,7 +93,8 @@ class MemberJoinTests(unittest.IsolatedAsyncioTestCase):
         chat_id=GROUP_ID,
         inviter_id=42,
     ):
-        """old_status/new_status: left, member, administrator или kicked."""
+        """old_status/new_status: left, member, administrator, kicked,
+        restricted_in (is_member=True) или restricted_out (is_member=False)."""
         user = User(
             id=user_id,
             is_bot=is_bot,
@@ -95,6 +107,8 @@ class MemberJoinTests(unittest.IsolatedAsyncioTestCase):
             "member": lambda: ChatMemberMember(user=user),
             "administrator": lambda: administrator(user),
             "kicked": lambda: ChatMemberBanned(user=user, until_date=0),
+            "restricted_in": lambda: restricted(user, is_member=True),
+            "restricted_out": lambda: restricted(user, is_member=False),
         }
         self.update_id += 1
         event = ChatMemberUpdated(
@@ -192,6 +206,42 @@ class MemberJoinTests(unittest.IsolatedAsyncioTestCase):
         )
         await self.send_member_update(
             "administrator", "member", first_name="Другое", username="other"
+        )
+        self.assertEqual(await self.read_people(), [(7, "Гриша", None, "grisha")])
+
+    async def test_restriction_of_active_member_does_not_change_table(self):
+        # member -> restricted с is_member=True: человек всё ещё в группе
+        await self.send_member_update("member", "restricted_in")
+        self.assertEqual(await self.read_people(), [])
+
+        await self.send_member_update("left", "member", first_name="Гриша", username="grisha")
+        await self.send_member_update(
+            "member", "restricted_in", first_name="Новое", username="new"
+        )
+        await self.send_member_update(
+            "restricted_in", "member", first_name="Другое", username="other"
+        )
+        self.assertEqual(await self.read_people(), [(7, "Гриша", None, "grisha")])
+
+    async def test_restricted_user_who_is_not_in_group_joins_as_member(self):
+        # restricted с is_member=False -> member: человек вошёл
+        await self.send_member_update(
+            "restricted_out", "member", first_name="Олег", username="oleg"
+        )
+
+        self.assertEqual(await self.read_people(), [(7, "Олег", None, "oleg")])
+
+    async def test_restricted_user_who_is_not_in_group_joins_still_restricted(self):
+        # restricted с is_member=False -> restricted с is_member=True: тоже вход
+        await self.send_member_update("restricted_out", "restricted_in", first_name="Анна")
+
+        self.assertEqual(await self.read_people(), [(7, "Анна", None, None)])
+
+    async def test_restricted_user_leaving_does_not_change_table(self):
+        # member -> restricted с is_member=False: человек вышел или был исключён
+        await self.send_member_update("left", "member", first_name="Гриша", username="grisha")
+        await self.send_member_update(
+            "member", "restricted_out", first_name="Новое", username="new"
         )
         self.assertEqual(await self.read_people(), [(7, "Гриша", None, "grisha")])
 
