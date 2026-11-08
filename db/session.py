@@ -31,7 +31,6 @@ def upgrade_database(database_url: URL) -> None:
     project_root = Path(__file__).resolve().parents[1]
     config = Config(str(project_root / "alembic.ini"))
     config.attributes["database_url"] = database_url
-    # Alembic's environment proxy is shared by calls within the same process.
     with _migration_lock:
         command.upgrade(config, "head")
 
