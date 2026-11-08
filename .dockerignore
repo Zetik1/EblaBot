@@ -2,7 +2,10 @@
 !requirements.txt
 !config.py
 !main.py
+!alembic.ini
 !db/**
+!migrations/
+!migrations/**
 !handlers/**
 !middlewares/**
 !keyboards/**
