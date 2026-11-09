@@ -20,4 +20,4 @@ def create_router() -> Router:
     router.message.register(ping, Command("ping"), F.chat.type == ChatType.PRIVATE)
     router.message.register(ping_in_group, Command("ping"), F.chat.type != ChatType.PRIVATE)
     
-    return router
+    return router 
