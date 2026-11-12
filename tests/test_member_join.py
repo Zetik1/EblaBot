@@ -142,7 +142,8 @@ class MemberJoinTests(unittest.IsolatedAsyncioTestCase):
 
         # сохранён вошедший (7), а не тот, кто его добавил (42)
         self.assertEqual(await self.read_people(), [(7, "Гриша", "Иванов", "grisha")])
-        self.request.assert_not_awaited()
+        # после успешного сохранения уходит одно приветствие
+        self.request.assert_awaited_once()
 
     async def test_join_without_optional_fields_stores_null(self):
         await self.send_member_update("left", "member", first_name="Анна")
