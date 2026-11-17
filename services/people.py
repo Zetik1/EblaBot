@@ -6,8 +6,6 @@ from db.models import Person
 from services.roles import Role
 from services.roles import role_for_registration
 
-logger = logging.getLogger(__name__)
-
 
 async def save_person(
     session: AsyncSession,
@@ -51,10 +49,6 @@ async def register_person(
     first_name: str,
     last_name: str | None,
     username: str | None,
-    
 ) -> None:
     role = role_for_registration(telegram_id, owner_id)
-    try:
-        await save_person(session, telegram_id, first_name, last_name, username, role)
-    except SQLAlchemyError:
-        logger.exception("Не удалось сохранить пользователя %s", telegram_id)
+    await save_person(session, telegram_id, first_name, last_name, username, role)
