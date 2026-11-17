@@ -10,6 +10,7 @@ async def save_person(
     first_name: str,
     last_name: str | None,
     username: str | None,
+    role: str | None,
 ) -> None:
     """Insert or update a profile and commit the supplied session."""
     insert_profile = sqlite_insert(Person).values(
@@ -17,6 +18,7 @@ async def save_person(
         first_name=first_name,
         last_name=last_name,
         username=username,
+        role=role,
     )
     upsert_profile = insert_profile.on_conflict_do_update(
         index_elements=[Person.telegram_id],
@@ -24,6 +26,7 @@ async def save_person(
             Person.first_name: insert_profile.excluded.first_name,
             Person.last_name: insert_profile.excluded.last_name,
             Person.username: insert_profile.excluded.username,
+            Person.role: insert_profile.excluded.role,
         },
     )
     await session.execute(upsert_profile)
