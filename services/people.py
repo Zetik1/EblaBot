@@ -1,10 +1,8 @@
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Person
-from services.roles import Role
-from services.roles import role_for_registration
+from services.roles import Role, role_for_registration
 
 
 async def save_person(
@@ -13,7 +11,7 @@ async def save_person(
     first_name: str,
     last_name: str | None,
     username: str | None,
-    role: Role | None,
+    role: Role | None = None,
 ) -> None:
     """Insert or update a profile and commit the supplied session."""
     insert_profile = sqlite_insert(Person).values(
@@ -27,9 +25,9 @@ async def save_person(
         insert_profile = insert_profile.values(role=role)
 
     update_fields = {
-            Person.first_name: insert_profile.excluded.first_name,
-            Person.last_name: insert_profile.excluded.last_name,
-            Person.username: insert_profile.excluded.username,
+        Person.first_name: insert_profile.excluded.first_name,
+        Person.last_name: insert_profile.excluded.last_name,
+        Person.username: insert_profile.excluded.username,
     }
     
     if role is not None:
