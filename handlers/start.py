@@ -7,21 +7,23 @@ from aiogram.types import Message
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.people import save_person
+from config import Settings
+from services.people import register_person
 
 logger = logging.getLogger(__name__)
 
 
-async def start(message: Message, session: AsyncSession) -> None:
+async def start(message: Message, settings: Settings, session: AsyncSession) -> None:
     assert message.from_user is not None
 
     telegram_id = message.from_user.id
     first_name = message.from_user.first_name
     last_name = message.from_user.last_name
     username = message.from_user.username
+    owner_id = settings.owner_id
 
     try:
-        await save_person(session, telegram_id, first_name, last_name, username)
+        await register_person(session, owner_id, telegram_id, first_name, last_name, username)
     except SQLAlchemyError:
         logger.exception("Не удалось сохранить пользователя %s", telegram_id)
         await message.answer("Не удалось сохранить ваши данные из-за технической проблемы.\nПожалуйста, обратитесь к администратору.")
