@@ -16,6 +16,11 @@ from db.models import Person
 from db.session import create_engine, create_tables
 from handlers import create_router
 from middlewares.database import DatabaseMiddleware
+from services.roles import Role
+
+OWNER_ID = 1
+ADMINCHECK_ALLOWED = "Вам доступны права администратора."
+ADMINCHECK_DENIED = "Данная команда доступна только администратору."
 
 
 class CommandTests(unittest.IsolatedAsyncioTestCase):
@@ -24,7 +29,7 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
             settings = Settings(
                 _env_file=None,
                 bot_token="123456:local-test-token",
-                owner_id=1,
+                owner_id=OWNER_ID,
                 group_id=-100123,
             )
         directory = tempfile.TemporaryDirectory()
@@ -51,8 +56,9 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
         self,
         text,
         *,
+        user_id=42,
         chat_type="private",
-        chat_id=42,
+        chat_id=None,
         thread_id=None,
         is_topic_message=None,
         first_name="Влад",
@@ -61,8 +67,8 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
         message = Message(
             message_id=1,
             date=datetime.now(timezone.utc),
-            chat=Chat(id=chat_id, type=chat_type),
-            from_user=User(id=42, is_bot=False, first_name=first_name),
+            chat=Chat(id=user_id if chat_id is None else chat_id, type=chat_type),
+            from_user=User(id=user_id, is_bot=False, first_name=first_name),
             text=text,
             message_thread_id=thread_id,
             is_topic_message=is_topic_message,
@@ -91,6 +97,45 @@ class CommandTests(unittest.IsolatedAsyncioTestCase):
                 reply = self.assert_reply(chat_id=42)
                 self.assertIn(f"Привет, {name}!", reply.text)
                 self.assertIn("/ping", reply.text)
+
+    async def test_admincheck_uses_the_senders_saved_role(self):
+        admin_id, moderator_id, user_id = 42, 43, 44
+        async with AsyncSession(self.engine) as session:
+            session.add_all([
+                Person(telegram_id=admin_id, first_name="Влад", role=Role.ADMIN),
+                Person(telegram_id=moderator_id, first_name="Гриша", role=Role.MODERATOR),
+                Person(telegram_id=user_id, first_name="Иван", role=Role.USER),
+            ])
+            await session.commit()
+
+        for sender_id, expected_reply in (
+            (admin_id, ADMINCHECK_ALLOWED),
+            (moderator_id, ADMINCHECK_DENIED),
+            (user_id, ADMINCHECK_DENIED),
+            (OWNER_ID, ADMINCHECK_DENIED),
+        ):
+            with self.subTest(sender_id=sender_id):
+                await self.send_message("/admincheck", user_id=sender_id)
+                self.assert_reply(chat_id=sender_id, text=expected_reply)
+
+    async def test_admincheck_after_start_for_owner_and_regular_user(self):
+        for user_id, expected_reply in (
+            (OWNER_ID, ADMINCHECK_ALLOWED),
+            (42, ADMINCHECK_DENIED),
+        ):
+            with self.subTest(user_id=user_id):
+                await self.send_message("/start", user_id=user_id)
+                await self.send_message("/admincheck", user_id=user_id)
+                self.assert_reply(chat_id=user_id, text=expected_reply)
+
+    async def test_admincheck_is_ignored_in_groups_even_for_admin(self):
+        await self.send_message("/start", user_id=OWNER_ID)
+        for chat_type in ("group", "supergroup"):
+            with self.subTest(chat_type=chat_type):
+                await self.send_message(
+                    "/admincheck", user_id=OWNER_ID, chat_type=chat_type, chat_id=-100123
+                )
+                self.request.assert_not_awaited()
 
     async def test_ping_in_private_chat(self):
         await self.send_message("/ping")
